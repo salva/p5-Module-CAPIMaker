@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Module::CAPIMaker;
+
+my %args;
+for (@ARGV) {
+    /^\s*(\w+)\s*=\s*(.*?)\s*$/
+        or die "Bad argument '$_'\n";
+    $args{$1} = $2;
+}
+
+my $mcm = Module::CAPIMaker->new(%args);
+$mcm->load_decl;
+$mcm->check_config;
+$mcm->gen_all;
+

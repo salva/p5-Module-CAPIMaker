@@ -1,34 +1,148 @@
 package Module::CAPIMaker;
 
-use 5.012004;
+our $VERSION = '0.01';
+
 use strict;
 use warnings;
 
-require Exporter;
-
-our @ISA = qw(Exporter);
-
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
-# This allows declaration	use Module::CAPIMaker ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-	
-);
-
-our $VERSION = '0.01';
+use Text::Template;
+use File::Spec;
+use POSIX qw(strftime);
 
 
-# Preloaded methods go here.
+use Module::CAPIMaker::Template::Module_H;
+use Module::CAPIMaker::Template::Module_C;
+use Module::CAPIMaker::Template::Sample_XS;
+use Module::CAPIMaker::Template::C_API_H;
+
+sub new {
+    my $class = shift;
+    my %config = @_;
+    my $self = { config => \%config,
+                 function => {},
+                 data => {}
+               };
+
+    $config{decl_filename} //= 'c_api.decl';
+
+    bless $self, $class;
+}
+
+sub load_decl {
+    my $self = shift;
+    my $config = $self->{config};
+    my $fn = $config->{decl_filename};
+    open my $fh, '<', $fn or die "Unable to open $fn: $!\n";
+    while (<$fh>) {
+        chomp;
+        s/^\s+//; s/\s+$//;
+        next if /^(?:#.*)?$/;
+        while (s/\s*\\$/ /) {
+            my $next = <$fh>;
+            $next =~ s/^\s+//; $next =~ s/\s+$//;
+            $_ .= $next;
+        }
+        if (/^(\w+)\s*=\s*(.*)/) {
+            $self->{config}{$1} = $2
+        }
+        elsif (/^((?:\w+\b\s*(?:\*+\s*)?)*)(\w+)\s*\((.*)\)$/) {
+            $self->{function}{$2} = { decl => $_,
+                                      type => $1,
+                                      name => $2,
+                                      args => $3 };
+        }
+        else {
+            die "Invalid declaration at $fn line $.\n";
+        }
+    }
+}
+
+sub check_config {
+    my $self = shift;
+    my $config = $self->{config};
+
+    my $module_name = $config->{module_name};
+    die "module_name declaration missing from $config->{decl_filename}\n"
+        unless defined $module_name;
+
+    die "Invalid value for module_name ($module_name)\n"
+        unless $module_name =~ /^\w+(?:::\w+)*$/;
+
+    my $c_module_name = $config->{c_module_name} //= do { my $cmn = lc $module_name;
+                                                          $cmn =~ s/\W+/_/g;
+                                                          $cmn };
+    die "Invalid value for c_module_name ($c_module_name)\n"
+        unless $c_module_name =~ /^\w+$/;
+
+    $config->{author} //= 'Unknown';
+    $config->{min_version} //= 1;
+    $config->{max_version} //= 1;
+
+    die "Invalid version declaration, min_version ($config->{min_version}) > max_version ($config->{max_version})\n"
+        if $config->{max_version} < $config->{min_version};
+
+    $config->{required_version} //= $config->{max_version};
+    $config->{module_version} //= '0';
+    $config->{capimaker_version} = $VERSION;
+
+    $config->{now} = strftime("%F %T", localtime);
+
+    $config->{destination_dir} //= 'c_api';
+
+    $config->{module_c_filename}  //= "perl_$c_module_name.c";
+    $config->{module_h_filename}  //= "perl_$c_module_name.h";
+    $config->{sample_xs_filename} //= "sample.xs";
+    $config->{c_api_h_filename}   //= "c_api.h";
+
+    $config->{module_h_barrier} //= do { my $ib = "$config->{module_h_filename}_INCLUDED";
+                                         $ib =~ s/\W+/_/g;
+                                         uc $ib };
+    die "Invalid value for module_h_barrier ($config->{module_h_barrier})\n"
+        unless $config->{module_h_barrier} =~ /^\w+$/;
+
+    $config->{c_api_h_barrier}  //= do { my $ib = "$config->{c_api_h_filename}_INCLUDED";
+                                         $ib =~ s/\W+/_/g;
+                                         uc $ib };
+    die "Invalid value for c_api_h_barrier ($config->{c_api_h_barrier})\n"
+        unless $config->{c_api_h_barrier} =~ /^\w+$/;
+
+
+    $config->{export_prefix} //= '';
+
+}
+
+sub gen_file {
+    my ($self, $template, $dir, $save_as) = @_;
+    my $config = $self->{config};
+    system mkdir => -p => $dir unless -d $dir; # FIX ME!
+    $save_as = File::Spec->rel2abs(File::Spec->join($dir, $save_as));
+    open my $fh, '>', $save_as or die "Unable to create $save_as: $!\n";
+    local $Text::Template::ERROR;
+    my $tt = Text::Template->new(TYPE => (ref $template ? 'ARRAY' : 'FILE'),
+                                 SOURCE => $template,
+                                 DELIMITERS => ['<%', '%>'] );
+    $tt->fill_in(HASH => { %$config, function => $self->{function} },
+                 OUTPUT => $fh);
+    warn "Some error happened while generating $save_as: $Text::Template::ERROR\n"
+        if $Text::Template::ERROR;
+}
+
+sub gen_all {
+    my $self = shift;
+    my $config = $self->{config};
+    $self->gen_file($config->{module_c_template_filename} // \@Module::CAPIMaker::Template::Module_C::template,
+                    $config->{destination_dir},
+                    $config->{module_c_filename});
+    $self->gen_file($config->{module_h_template_filename} // \@Module::CAPIMaker::Template::Module_H::template,
+                    $config->{destination_dir},
+                    $config->{module_h_filename});
+    $self->gen_file($config->{sample_xs_template_filename} // \@Module::CAPIMaker::Template::Sample_XS::template,
+                    $config->{destination_dir},
+                    $config->{sample_xs_filename});
+    $self->gen_file($config->{c_api_h_template_filename} // \@Module::CAPIMaker::Template::C_API_H::template,
+                    '.',
+                    $config->{c_api_h_filename});
+}
 
 1;
 __END__
