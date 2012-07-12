@@ -39,17 +39,38 @@ sub load_decl {
         next if /^(?:#.*)?$/;
         while (s/\s*\\$/ /) {
             my $next = <$fh>;
+            chomp $next;
             $next =~ s/^\s+//; $next =~ s/\s+$//;
             $_ .= $next;
         }
-        if (/^(\w+)\s*=\s*(.*)/) {
-            $self->{config}{$1} = $2
+        if (my ($k, $v) = /^(\w+)\s*=\s*(.*)/) {
+            if (my ($mark) = $v =~ /^<<\s*(\w+)$/) {
+                $v = '';
+                while (1) {
+                    my $line = <$fh>;
+                    defined $line or die "Ending token '$mark' missing at $fn line $.\n";
+                    last if $line =~ /^$mark$/;
+                    $v .= $line;
+                }
+            }
+            $self->{config}{$k} = $v;
         }
-        elsif (/^((?:\w+\b\s*(?:\*+\s*)?)*)(\w+)\s*\((.*)\)$/) {
-            $self->{function}{$2} = { decl => $_,
-                                      type => $1,
-                                      name => $2,
-                                      args => $3 };
+        elsif (/^((?:\w+\b\s*(?:\*+\s*)?)*)(\w+)\s*\(\s*(.*?)\s*\)$/) {
+            my $args = $3;
+            my %f = ( decl => $_,
+                      type => $1,
+                      name => $2,
+                      args => $args );
+            $self->{function}{$2} = \%f;
+
+            if ($f{pTHX} = $args =~ s/^pTHX(?:_\s+|$)//) {
+                $args =~ s/^void$//;
+                my @args = split /\s*,\s*/, $args;
+                # warn "args |$args| => |". join('-', @args) . "|";
+                $f{macro_args} = join(', ', ('a'..'z')[0..$#args]);
+                $f{call_args} = (@args ? 'aTHX_ (' . join('), (', ('a'..'z')[0..$#args]) .')' : 'aTHX');
+            }
+
         }
         else {
             die "Invalid declaration at $fn line $.\n";
@@ -107,8 +128,11 @@ sub check_config {
         unless $config->{c_api_h_barrier} =~ /^\w+$/;
 
 
-    $config->{export_prefix} //= '';
-
+    $config->{$_} //= '' for qw(export_prefix
+                                module_c_beginning
+                                module_c_end
+                                module_h_beginning
+                                module_h_end);
 }
 
 sub gen_file {
