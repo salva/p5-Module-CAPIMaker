@@ -9,6 +9,8 @@ use Text::Template;
 use File::Spec;
 use POSIX qw(strftime);
 
+use Exporter qw(import);
+our @EXPORT = qw(make_c_api);
 
 use Module::CAPIMaker::Template::Module_H;
 use Module::CAPIMaker::Template::Module_C;
@@ -168,26 +170,110 @@ sub gen_all {
                     $config->{c_api_h_filename});
 }
 
+sub run {
+    my %args;
+    for (@ARGV) {
+        /^\s*(\w+)\s*=\s*(.*?)\s*$/
+            or die "Bad argument '$_'\n";
+        $args{$1} = $2;
+    }
+    my $mcm = Module::CAPIMaker->new(%args);
+    $mcm->load_decl;
+    $mcm->check_config;
+    $mcm->gen_all;
+}
+
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
 
-Module::CAPIMaker - Perl extension for blah blah blah
+Module::CAPIMaker - Provide a C API for your XS modules
 
 =head1 SYNOPSIS
 
-  use Module::CAPIMaker;
-  blah blah blah
+  perl -MModule::CAPIMaker -e make_c_api
 
 =head1 DESCRIPTION
 
-Stub documentation for Module::CAPIMaker, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
+If you are the author of a Perl module written using XS. Using
+Module::CAPIMaker you will be able to provide your module users with
+an easy and efficient way to access its functionality directly from
+their own XS modules.
 
-Blah blah blah.
+=head2 Skeleton of a C API
+
+
+
+=head1 USAGE
+
+In order to provide a C API for your module using Module::CAPIMaker
+you have to perform the following actions:
+
+=head2 Create c_api.decl
+
+The file c_api.decl contains a definition of your C API.
+
+It accepts two kind of entries: configuration settings and function
+prototypes.
+
+=head3 Function declarations
+
+Function declarations are identical to those you will use in a
+C header file, though without the semicolon at the end. In example:
+
+  int foo(double)
+  char *bar(void)
+
+Functions that use the THX macros are also accepted:
+
+  SV *make_object(pTHX_ double *)
+
+=head3 Configuration settings
+
+Configuration settings are of the form C<key=value> where key must
+match /^\w+$/ and value can be anything. For instance
+
+   module_name = Foo::XS
+   author = Valentine Michael Smith
+
+A backslash at the end of the line indicates that the following line
+is a continuation of the current one:
+
+   some_words = bicycle automobile \
+                house duck
+
+Here-docs can also be used:
+
+   some_more_words = <<END
+   car pool tree
+   disc book
+   END
+
+The following configuration settings are currently supported by the
+module:
+
+=over 4
+
+
+=back
+
+=head2 Generating the interface
+
+Once your c_api.decl file is ready use Module::CAPIMaker to generate
+the C API running the companion script C<make_perl_module_c_api>. This
+script also accept a list of configuration setting from the command
+line. For instance:
+
+  make_perl_mocule_c_api module_name=Foo::XS \
+      author="Valentine Michael Smith"
+
+If you want to do it from some Perl script, you can also use the
+make_c_api sub exported by this module.
+
+
+
+
 
 =head2 EXPORT
 
