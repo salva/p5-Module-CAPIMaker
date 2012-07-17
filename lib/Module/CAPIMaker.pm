@@ -215,8 +215,8 @@ Suppose that we have one module C<Foo::XS> C<Foo::XS> providing a C
 API with the help of Module::CAPIMaker and another module C<Bar> that
 uses that API.
 
-When C<Foo::XS> is loaded, the pointers of the functions available through
-the C API are published on the global hash C<%Foo::XS::C_API>.
+When C<Foo::XS> is loaded, the addresses of the functions available
+through the C API are published on the global hash C<%Foo::XS::C_API>.
 
 When C<Bar> loads, first, it ensures that C<Foo::XS> is loaded
 (loading it if required) and checks that the versions of the C API
