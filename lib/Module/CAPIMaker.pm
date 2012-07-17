@@ -589,6 +589,21 @@ contact me explaining your issued. I originally wrote
 Module::CAPIMaker to solve my particular problems but I would gladly
 expand it to make it cover a wider range of problems.
 
+
+=head1 SUPPORT
+
+In order to report bugs you can send me and email to the address that
+appears below or use the CPAN RT bugtracking system available at
+L<http://rt.cpan.org>.
+
+The source for the development version of the module is hosted at
+GitHub: L<https://github.com/salva/p5-Module-CAPIMaker>.
+
+=head2 My wishlist
+
+If you like this module and you're feeling generous, take a look at my
+Amazon Wish List: L<http://amzn.com/w/1WU1P6IR5QZ42>
+
 =head1 SEE ALSO
 
 L<Math::Int128>, L<Math::Int64>, L<Tie::Array::Packed> are modules
