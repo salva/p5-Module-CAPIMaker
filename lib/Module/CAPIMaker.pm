@@ -170,7 +170,7 @@ sub gen_all {
                     $config->{c_api_h_filename});
 }
 
-sub run {
+sub make_c_api {
     my %args;
     for (@ARGV) {
         /^\s*(\w+)\s*=\s*(.*?)\s*$/
