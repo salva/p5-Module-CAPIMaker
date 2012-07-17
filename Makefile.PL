@@ -1,12 +1,11 @@
-use 5.012004;
+use 5.010;
 use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
-WriteMakefile(
-    NAME              => 'Module::CAPIMaker',
-    VERSION_FROM      => 'lib/Module/CAPIMaker.pm', # finds $VERSION
-    PREREQ_PM         => {}, # e.g., Module::Name => 1.1
-    ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM  => 'lib/Module/CAPIMaker.pm', # retrieve abstract from module
-       AUTHOR         => 'Salvador Fandiño <salva@>') : ()),
-);
+
+WriteMakefile( NAME          => 'Module::CAPIMaker',
+               VERSION_FROM  => 'lib/Module/CAPIMaker.pm', # finds $VERSION
+               PREREQ_PM     => { Text::Template => 1.45 },
+               ABSTRACT_FROM => 'lib/Module/CAPIMaker.pm',
+               AUTHOR        => 'Salvador Fandiño <sfandino@yahoo.com>',
+               EXE_FILES     => [ 'bin/make_perl_module_c_api' ],
+               MAN1PODS      => { 'bin/make_perl_module_c_api' => '$(INST_MAN1DIR)/make_perl_module_c_api.1' } );
+             );
