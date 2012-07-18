@@ -13,7 +13,7 @@ __DATA__
  *
  * Generated on: <% $now %>
  * <% $module_name %> version: <% $module_version %>
- * Module::CAPIMaker version: <% module_capimaker_version %>
+ * Module::CAPIMaker version: <% $module_capimaker_version %>
  */
 
 #if !defined (<% $module_h_barrier %>)
