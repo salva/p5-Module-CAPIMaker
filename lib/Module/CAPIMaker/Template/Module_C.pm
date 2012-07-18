@@ -39,7 +39,8 @@ perl_<% $c_module_name %>_load(int required_version) {
 
     <% $c_module_name %>_c_api_hash = get_hv("<% $module_name %>::C_API", 0);
     if (!<% $c_module_name %>_c_api_hash) {
-        sv_setpv_mg(ERRSV, "Unable to load <% $module_name %> C API");
+        sv_setpv(ERRSV, "Unable to load <% $module_name %> C API");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
 
@@ -47,12 +48,13 @@ perl_<% $c_module_name %>_load(int required_version) {
     <% $c_module_name %>_c_api_max_version = SvIV(*hv_fetch(<% $c_module_name %>_c_api_hash, "max_version", <% length "max_version" %>, 1));
     if ((required_version < <% $c_module_name %>_c_api_min_version) ||
         (required_version > <% $c_module_name %>_c_api_max_version)) {
-        sv_setpvf_mg(ERRSV, 
-                     "<% $module_name %> C API version mismatch. "
-                     "The installed module supports versions %d to %d but %d is required",
-                     <% $c_module_name %>_c_api_min_version,
-                     <% $c_module_name %>_c_api_max_version,
-                     required_version);
+        sv_setpvf(ERRSV, 
+                  "<% $module_name %> C API version mismatch. "
+                  "The installed module supports versions %d to %d but %d is required",
+                  <% $c_module_name %>_c_api_min_version,
+                  <% $c_module_name %>_c_api_max_version,
+                  required_version);
+        SvSETMAGIC(ERRSV);
         return 0;
     }
 
@@ -62,7 +64,8 @@ perl_<% $c_module_name %>_load(int required_version) {
         $OUT .= <<EOC
     svp = hv_fetch(${c_module_name}_c_api_hash, "$n", $len, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer '$n' C function from $module_name");
+        sv_setpv(ERRSV, "Unable to fetch pointer '$n' C function from $module_name");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     ${c_module_name}_c_api_$n = INT2PTR(void *, SvIV(*svp));
