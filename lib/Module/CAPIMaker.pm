@@ -1,6 +1,6 @@
 package Module::CAPIMaker;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use strict;
 use warnings;
@@ -609,6 +609,9 @@ Amazon Wish List: L<http://amzn.com/w/1WU1P6IR5QZ42>
 L<Math::Int128>, L<Math::Int64>, L<Tie::Array::Packed> are modules
 providing or using (or both) a C API created with the help of
 Module::CAPIMaker.
+
+L<Math::Int64::C_API::Sample> is a package showing how to use the C
+API of Math::Int64.
 
 =head1 COPYRIGHT AND LICENSE
 
