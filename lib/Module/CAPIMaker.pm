@@ -135,6 +135,8 @@ sub check_config {
                                 module_c_end
                                 module_h_beginning
                                 module_h_end);
+
+    $config->{module_capimaker_version} = $VERSION;
 }
 
 sub gen_file {

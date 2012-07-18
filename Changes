@@ -1,6 +1,8 @@
 Revision history for Perl extension Module::CAPIMaker.
 
 0.02
+        - add version of Module::CAPIMaker used into the generated
+          files
         - add pointer to Math::Int64::C_API::Sample in docs
         - do not use sv_setpvf_mg on generated code as it is not
           available on recent perls
